@@ -1,10 +1,10 @@
 const assets = [
-    { name: 'Gold', price: 100, volatility: 0.02 },
-    { name: 'Bank Deposits', price: 100, volatility: 0.01 },
-    { name: 'Stagg Securities', price: 100, volatility: 0.015 },
-    { name: 'Campbell Consumables', price: 100, volatility: 0.02 },
-    { name: 'Anderson Technologies', price: 100, volatility: 0.03 },
-    { name: 'Birch Biotech', price: 100, volatility: 0.05 }
+    { name: 'Gold', price: 100, volatility: 0.02, prevPrice: 100 },
+    { name: 'Bank Deposits', price: 100, volatility: 0.01, prevPrice: 100 },
+    { name: 'Stagg Securities', price: 100, volatility: 0.015, prevPrice: 100 },
+    { name: 'Campbell Consumables', price: 100, volatility: 0.02, prevPrice: 100 },
+    { name: 'Anderson Technologies', price: 100, volatility: 0.03, prevPrice: 100 },
+    { name: 'Birch Biotech', price: 100, volatility: 0.05, prevPrice: 100 }
 ];
 
 const economyMultipliers = {
@@ -20,6 +20,8 @@ const players = {
     girls: { cash: 1000, holdings: {} }
 };
 
+let tickCount = 0;
+
 assets.forEach(a => {
     players.boys.holdings[a.name] = 0;
     players.girls.holdings[a.name] = 0;
@@ -30,8 +32,9 @@ function renderAssets() {
     tbody.innerHTML = '';
     assets.forEach((asset, index) => {
         const row = document.createElement('tr');
+        const priceClass = asset.price > asset.prevPrice ? 'up' : asset.price < asset.prevPrice ? 'down' : '';
         row.innerHTML = `<td>${asset.name}</td>` +
-            `<td class="price" data-index="${index}">${asset.price.toFixed(2)}</td>` +
+            `<td class="price ${priceClass}" data-index="${index}">${asset.price.toFixed(2)}</td>` +
             `<td><input type="number" step="0.01" min="0" value="${asset.volatility}" data-volt="${index}"></td>`;
         tbody.appendChild(row);
     });
@@ -86,13 +89,19 @@ document.getElementById('tick').addEventListener('click', () => {
     assets.forEach(asset => {
         const voltInput = document.querySelector(`input[data-volt="${assets.indexOf(asset)}"]`);
         asset.volatility = parseFloat(voltInput.value) || asset.volatility;
-        const change = (Math.random() * asset.volatility * 2 - asset.volatility) * economyMultipliers[econ];
+        asset.prevPrice = asset.price;
+        const econImpact = economyMultipliers[econ] * (1 + asset.volatility * 5);
+        const baseChange = Math.random() * asset.volatility * 2 - asset.volatility;
+        const change = baseChange * econImpact;
         asset.price = Math.max(1, asset.price * (1 + change));
     });
 
     ['boys', 'girls'].forEach(p => {
         players[p].cash *= 1 - inflation;
     });
+
+    tickCount++;
+    document.getElementById('tickCount').textContent = tickCount;
 
     renderAssets();
     updateNetWorth();
